@@ -10,11 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from app.container import Infra
-from app.infrastructure.config import get_settings
-from app.infrastructure.logging import configure_logging
-from app.presentation.api.v1 import api_router
-from app.presentation.errors import register_error_handlers
+from app.api import api_router
+from app.config import get_settings
+from app.error_handlers import register_error_handlers
+from app.logging_config import configure_logging
+from app.restaurant.container import Infra
 from app.worker import JobWorker
 
 log = logging.getLogger("app")

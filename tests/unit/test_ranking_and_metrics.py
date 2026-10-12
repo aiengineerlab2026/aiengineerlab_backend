@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.domain.evaluation.metrics import (
+from app.restaurant.domain.evaluation.metrics import (
     mean_ignoring_none,
     precision_at_k,
     recall_at_k,
     retrieval_metrics,
 )
-from app.domain.rag.ranking import merge_best_score, rank_dishes, rrf_fuse
-from app.domain.rag.value_objects import (
+from app.restaurant.domain.rag.ranking import merge_best_score, rank_dishes, rrf_fuse
+from app.restaurant.domain.rag.value_objects import (
     ChunkingConfig,
     ChunkingStrategy,
     EmbeddingSpec,

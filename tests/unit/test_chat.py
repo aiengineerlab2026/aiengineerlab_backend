@@ -3,10 +3,15 @@ from __future__ import annotations
 import pytest
 from conftest import ScriptedLLM, World  # type: ignore[import-not-found]
 
-from app.application.chat.parser import ParsedTurn, RuleTurnParser, SearchConstraints, extract_constraints
-from app.application.chat.resolver import resolve_dish, resolve_reference
-from app.application.chat.service import AnswerOut
-from app.domain.rag.value_objects import ChunkingConfig, ChunkingStrategy, RetrievalConfig
+from app.restaurant.application.chat.parser import (
+    ParsedTurn,
+    RuleTurnParser,
+    SearchConstraints,
+    extract_constraints,
+)
+from app.restaurant.application.chat.resolver import resolve_dish, resolve_reference
+from app.restaurant.application.chat.service import AnswerOut
+from app.restaurant.domain.rag.value_objects import ChunkingConfig, ChunkingStrategy, RetrievalConfig
 
 # ------------------------------------------------------------------------------ rule parser
 
@@ -107,7 +112,7 @@ async def test_search_enforces_hard_filters_deterministically():
 
 
 async def test_conversation_comes_from_the_client_and_is_not_stored():
-    from app.domain.chat.entities import ChatMessage
+    from app.restaurant.domain.chat.entities import ChatMessage
 
     w, sid = await _active()
     history = [ChatMessage(session_id=sid, role="user", content="hi"), ChatMessage(session_id=sid, role="assistant", content="hello")]
@@ -201,7 +206,7 @@ async def test_follow_up_references_use_the_last_shown_dishes():
 
 
 async def test_blank_and_unknown_session_are_rejected():
-    from app.domain.errors import NotFoundError, ValidationFailed
+    from app.errors import NotFoundError, ValidationFailed
 
     w, sid = await _active()
     with pytest.raises(ValidationFailed):
@@ -250,7 +255,7 @@ async def test_llm_recommendations_outside_the_eligible_set_are_dropped():
 
 
 async def test_when_the_free_llm_quota_is_used_up_the_customer_is_told_to_try_later():
-    from app.domain.errors import LLMQuotaExceeded
+    from app.errors import LLMQuotaExceeded
     from tests.conftest import ScriptedLLM
 
     class OutOfQuota(ScriptedLLM):
@@ -265,7 +270,7 @@ async def test_when_the_free_llm_quota_is_used_up_the_customer_is_told_to_try_la
 
 
 def test_provider_quota_errors_are_recognised():
-    from app.infrastructure.llm.quota import is_quota_error as _quota_exhausted
+    from app.restaurant.infrastructure.llm.quota import is_quota_error as _quota_exhausted
 
     assert _quota_exhausted(RuntimeError("429 RESOURCE_EXHAUSTED: You exceeded your current quota"))
     assert not _quota_exhausted(RuntimeError("500 internal error"))
@@ -275,7 +280,7 @@ def test_provider_quota_errors_are_recognised():
 
 
 async def test_rule_parser_remembers_the_previous_question_for_follow_ups():
-    from app.domain.chat.entities import ChatMessage  # noqa: PLC0415
+    from app.restaurant.domain.chat.entities import ChatMessage  # noqa: PLC0415
 
     history = [
         ChatMessage(session_id="s", role="user", content="show me pasta dishes"),

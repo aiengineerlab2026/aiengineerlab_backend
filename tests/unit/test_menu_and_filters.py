@@ -4,9 +4,9 @@ from dataclasses import replace
 
 import pytest
 
-from app.application.chat.parser import SearchConstraints, to_dish_filter
-from app.domain.restaurant.filters import DishFilter, apply_filter, normalize_allergens
-from app.infrastructure.seed.menu_data import CATEGORIES, build_menu
+from app.restaurant.application.chat.parser import SearchConstraints, to_dish_filter
+from app.restaurant.domain.filters import DishFilter, apply_filter, normalize_allergens
+from app.restaurant.infrastructure.seed.menu_data import CATEGORIES, build_menu
 
 
 def test_menu_fixture_is_deterministic_and_in_range():

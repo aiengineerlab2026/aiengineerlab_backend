@@ -6,10 +6,10 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from app.infrastructure.config import Settings
-from app.infrastructure.rate_limit import SlidingWindowLimiter
-from app.presentation.deps import enforce_chat_rate_limit
-from app.presentation.errors import register_error_handlers
+from app.config import Settings
+from app.error_handlers import register_error_handlers
+from app.rate_limit import SlidingWindowLimiter
+from app.restaurant.presentation.deps import enforce_chat_rate_limit
 
 
 class Clock:
@@ -107,7 +107,7 @@ def test_forwarded_header_is_used_when_the_proxy_is_trusted():
 @pytest.mark.parametrize("path", ["/chat/sessions/{session_id}/messages"])
 def test_the_real_chat_endpoint_is_guarded(path):
     """Guards against someone removing the dependency from the production route."""
-    from app.presentation.api.v1.ordering import router
+    from app.restaurant.presentation.chat import router
 
     route = next(r for r in router.routes if getattr(r, "path", "") == path and "POST" in r.methods)
     assert any(d.call is enforce_chat_rate_limit for d in route.dependant.dependencies)
@@ -133,7 +133,7 @@ def test_peek_is_empty_when_the_limit_is_disabled():
 
 
 def test_usage_endpoint_counts_only_real_messages():
-    from app.presentation.api.v1.ordering import chat_usage
+    from app.restaurant.presentation.chat import chat_usage
 
     c = _client(limit=3)
     c.app.add_api_route("/usage", chat_usage, methods=["GET"])
@@ -146,6 +146,6 @@ def test_usage_endpoint_counts_only_real_messages():
 
 
 def test_usage_route_is_registered_before_the_session_routes():
-    from app.presentation.api.v1.ordering import router
+    from app.restaurant.presentation.chat import router
 
     assert any(getattr(r, "path", "") == "/chat/usage" and "GET" in r.methods for r in router.routes)

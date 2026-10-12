@@ -5,8 +5,8 @@ from decimal import Decimal
 
 import pytest
 
-from app.domain.errors import ConflictError, NotFoundError, ValidationFailed
-from app.domain.ordering.entities import MAX_QUANTITY_PER_ITEM, Cart, Order
+from app.errors import ConflictError, NotFoundError, ValidationFailed
+from app.restaurant.domain.ordering.entities import MAX_QUANTITY_PER_ITEM, Cart, Order
 
 
 def test_add_merges_quantities_and_uses_server_side_price(dishes):

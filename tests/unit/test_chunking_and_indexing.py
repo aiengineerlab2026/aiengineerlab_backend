@@ -3,17 +3,17 @@ from __future__ import annotations
 import pytest
 from conftest import FakeEmbedder, World, _SemanticEmbeddings  # type: ignore[import-not-found]
 
-from app.domain.errors import ValidationFailed
-from app.domain.rag.entities import IndexStatus
-from app.domain.rag.value_objects import (
+from app.errors import ValidationFailed
+from app.restaurant.domain.canonical import build_corpus, normalize_ws, render_dish
+from app.restaurant.domain.rag.entities import IndexStatus
+from app.restaurant.domain.rag.value_objects import (
     ChunkingConfig,
     ChunkingStrategy,
     LengthUnit,
     RetrievalConfig,
     RetrievalStrategy,
 )
-from app.domain.restaurant.canonical import build_corpus, normalize_ws, render_dish
-from app.infrastructure.rag.chunking.strategies import ChunkerFactory
+from app.restaurant.infrastructure.rag.chunking.strategies import ChunkerFactory
 
 
 @pytest.fixture
@@ -156,9 +156,9 @@ async def test_failed_index_is_requeued(world: World):
 
 
 async def test_every_embedding_model_gets_its_own_index_built_with_its_own_embedder(world: World):
-    from app.application.rag.config import DEFAULT_CHUNKING, DEFAULT_RETRIEVAL, ConfigService
-    from app.application.rag.indexing import IndexingService
-    from app.domain.rag.value_objects import EmbeddingSpec
+    from app.restaurant.application.rag.config import DEFAULT_CHUNKING, DEFAULT_RETRIEVAL, ConfigService
+    from app.restaurant.application.rag.indexing import IndexingService
+    from app.restaurant.domain.rag.value_objects import EmbeddingSpec
     from tests.conftest import FakeEmbedder
 
     other_spec = EmbeddingSpec(provider="fake", model="wide-1024", dimensions=1024)
@@ -190,10 +190,10 @@ async def test_every_embedding_model_gets_its_own_index_built_with_its_own_embed
 
 async def test_each_request_searches_the_index_of_the_embedding_model_it_names(world: World):
     """Per request, not global: two embedding models are served side by side, each from its own pre-built index."""
-    from app.application.rag.config import DEFAULT_CHUNKING, DEFAULT_RETRIEVAL, ConfigService
-    from app.application.rag.indexing import IndexingService
-    from app.application.rag.retrieval import RetrievalService
-    from app.domain.rag.value_objects import EmbeddingSpec
+    from app.restaurant.application.rag.config import DEFAULT_CHUNKING, DEFAULT_RETRIEVAL, ConfigService
+    from app.restaurant.application.rag.indexing import IndexingService
+    from app.restaurant.application.rag.retrieval import RetrievalService
+    from app.restaurant.domain.rag.value_objects import EmbeddingSpec
     from tests.conftest import FakeEmbedder
 
     other_spec = EmbeddingSpec(provider="fake", model="other-model", dimensions=256)

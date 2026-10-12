@@ -10,6 +10,7 @@ longer point at an experiment: each already stores its own ``config_snapshot``.
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "0003"

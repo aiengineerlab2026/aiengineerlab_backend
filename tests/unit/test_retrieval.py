@@ -3,10 +3,15 @@ from __future__ import annotations
 import pytest
 from conftest import ScriptedLLM, World  # type: ignore[import-not-found]
 
-from app.application.rag.retrieval import QueryVariants, build_context, clean_variants
-from app.domain.errors import ConflictError, ServiceNotConfigured
-from app.domain.rag.value_objects import ChunkingConfig, ChunkingStrategy, RetrievalConfig, RetrievalStrategy
-from app.domain.restaurant.filters import DishFilter
+from app.errors import ConflictError, ServiceNotConfigured
+from app.restaurant.application.rag.retrieval import QueryVariants, build_context, clean_variants
+from app.restaurant.domain.filters import DishFilter
+from app.restaurant.domain.rag.value_objects import (
+    ChunkingConfig,
+    ChunkingStrategy,
+    RetrievalConfig,
+    RetrievalStrategy,
+)
 
 ENTITY = ChunkingConfig(strategy=ChunkingStrategy.ENTITY)
 

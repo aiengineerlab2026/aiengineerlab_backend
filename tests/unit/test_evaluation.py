@@ -7,23 +7,23 @@ from types import SimpleNamespace
 import pytest
 from conftest import ScriptedLLM, World  # type: ignore[import-not-found]
 
-from app.application.evaluation.ports import RAGAS_METRIC_KEYS, RagasEvaluator, RagasInput
-from app.application.evaluation.runner import EvaluationRunner
-from app.application.evaluation.service import EvaluationService
-from app.domain.errors import ConflictError, ValidationFailed
-from app.domain.evaluation.entities import (
+from app.errors import ConflictError, ValidationFailed
+from app.restaurant.application.evaluation.ports import RAGAS_METRIC_KEYS, RagasEvaluator, RagasInput
+from app.restaurant.application.evaluation.runner import EvaluationRunner
+from app.restaurant.application.evaluation.service import EvaluationService
+from app.restaurant.domain.evaluation.entities import (
     EvalDataset,
     EvalQuestion,
     EvaluationRun,
     LiveEvaluation,
     QueryResult,
 )
-from app.domain.evaluation.metrics import retrieval_metrics
-from app.domain.evaluation.repositories import EvaluationRepository
-from app.domain.rag.entities import JobStatus
-from app.domain.rag.ranking import rank_dishes
-from app.domain.rag.value_objects import ChunkingConfig, ChunkingStrategy, RetrievalConfig
-from app.infrastructure.seed.evaluation_data import (
+from app.restaurant.domain.evaluation.metrics import retrieval_metrics
+from app.restaurant.domain.evaluation.repositories import EvaluationRepository
+from app.restaurant.domain.rag.entities import JobStatus
+from app.restaurant.domain.rag.ranking import rank_dishes
+from app.restaurant.domain.rag.value_objects import ChunkingConfig, ChunkingStrategy, RetrievalConfig
+from app.restaurant.infrastructure.seed.evaluation_data import (
     EVAL_DATASET_NAME,
     EVAL_DATASET_VERSION,
     build_dataset,

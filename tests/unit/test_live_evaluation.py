@@ -8,14 +8,14 @@ from types import SimpleNamespace
 from conftest import ScriptedLLM, World  # type: ignore[import-not-found]
 from test_evaluation import FakeRagas, MemEvalRepo  # type: ignore[import-not-found]
 
-from app.application.chat.parser import ParsedTurn, SearchConstraints
-from app.application.chat.service import AnswerOut
-from app.application.evaluation.live import LiveEvaluator, RelevantDishes, menu_table, summarize
-from app.domain.evaluation.entities import LiveEvaluation
-from app.domain.rag.entities import JobStatus
-from app.domain.rag.ranking import rank_dishes
-from app.domain.rag.value_objects import ChunkingConfig, ChunkingStrategy, RetrievalConfig
-from app.domain.restaurant.filters import DishFilter
+from app.restaurant.application.chat.parser import ParsedTurn, SearchConstraints
+from app.restaurant.application.chat.service import AnswerOut
+from app.restaurant.application.evaluation.live import LiveEvaluator, RelevantDishes, menu_table, summarize
+from app.restaurant.domain.evaluation.entities import LiveEvaluation
+from app.restaurant.domain.filters import DishFilter
+from app.restaurant.domain.rag.entities import JobStatus
+from app.restaurant.domain.rag.ranking import rank_dishes
+from app.restaurant.domain.rag.value_objects import ChunkingConfig, ChunkingStrategy, RetrievalConfig
 
 QUESTION = "something spicy with chicken"
 
@@ -254,7 +254,7 @@ async def test_reference_contexts_cover_every_dish_a_multi_dish_chunk_mentions()
 
 
 def test_questions_are_grouped_by_the_configuration_they_were_answered_with():
-    from app.application.evaluation.live import config_key
+    from app.restaurant.application.evaluation.live import config_key
 
     base = {"index_fingerprint": "ix1", "retrieval": {"strategy": "vector", "top_k": 5}, "llm_model": "m"}
     assert config_key(base) == config_key({**base, "llm_model": "other"})  # only index + retrieval matter

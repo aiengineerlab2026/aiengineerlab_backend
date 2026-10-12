@@ -9,17 +9,17 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, Field
 
-from app.application.evaluation.ports import RagasInput
-from app.domain.errors import (
+from app.config import Settings, build_async_url
+from app.error_handlers import register_error_handlers
+from app.errors import (
     ConflictError,
     ExternalServiceError,
     NotFoundError,
     ServiceNotConfigured,
     ValidationFailed,
 )
-from app.infrastructure.config import Settings, build_async_url
-from app.infrastructure.evaluation import ragas_evaluator as mod
-from app.presentation.errors import register_error_handlers
+from app.restaurant.application.evaluation.ports import RagasInput
+from app.restaurant.infrastructure.evaluation import ragas_evaluator as mod
 
 # ------------------------------------------------------------------------------ RAGAS adapter
 
@@ -79,8 +79,8 @@ async def test_only_llm_free_ragas_metrics_are_wired(monkeypatch):
 def test_the_default_threshold_would_accept_different_dishes_so_a_strict_one_is_used():
     from rapidfuzz.distance import Levenshtein
 
-    from app.domain.restaurant.canonical import render_dish
-    from app.infrastructure.seed.menu_data import build_menu
+    from app.restaurant.domain.canonical import render_dish
+    from app.restaurant.infrastructure.seed.menu_data import build_menu
 
     dishes = build_menu()
     texts = [render_dish(d) for d in dishes]

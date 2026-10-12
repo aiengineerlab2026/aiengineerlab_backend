@@ -4,19 +4,19 @@ Revision ID: 0001
 Revises: 
 Create Date: 2026-10-09 22:19:53.352034
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
+import pgvector.sqlalchemy.vector
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-import pgvector.sqlalchemy.vector
-from app.infrastructure.config import get_settings
+from alembic import op
+from app.config import get_settings
 
 revision: str = '0001'
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

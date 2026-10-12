@@ -10,12 +10,12 @@ import argparse
 import asyncio
 import logging
 
-from app.application.rag.config import DEFAULT_CHUNKING, DEFAULT_RETRIEVAL
-from app.container import Infra
-from app.domain.rag.entities import IndexStatus
-from app.infrastructure.config import get_settings
-from app.infrastructure.logging import configure_logging
-from app.infrastructure.seed.seeder import seed_evaluation_dataset, seed_menu
+from app.config import get_settings
+from app.logging_config import configure_logging
+from app.restaurant.application.rag.config import DEFAULT_CHUNKING, DEFAULT_RETRIEVAL
+from app.restaurant.container import Infra
+from app.restaurant.domain.rag.entities import IndexStatus
+from app.restaurant.infrastructure.seed.seeder import seed_evaluation_dataset, seed_menu
 
 log = logging.getLogger("cli")
 
@@ -31,7 +31,7 @@ async def seed(build_index: bool) -> None:
                 print(f"Created the default configuration (index {index.status.value})")
         print(f"Seeded {n} dishes and evaluation dataset {ds_id} ({q} questions).")
         if build_index:
-            from app.application.rag.jobs import run_index_build
+            from app.restaurant.application.rag.jobs import run_index_build
 
             async with infra.uow() as s:
                 index = await s.config.ensure_index()

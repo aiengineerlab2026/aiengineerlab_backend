@@ -17,17 +17,18 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.application.chat.parser import TurnParser
-from app.application.chat.service import ChatService
-from app.application.ordering.services import CartService, OrderService
-from app.application.rag.config import ConfigService
-from app.application.rag.indexing import IndexingService
-from app.application.rag.retrieval import RetrievalService
-from app.domain.chat.entities import ChatSession
-from app.domain.chat.repositories import ChatRepository
-from app.domain.ordering.entities import Cart, Order
-from app.domain.ordering.repositories import CartRepository, OrderRepository
-from app.domain.rag.entities import (
+from app.restaurant.application.chat.parser import TurnParser
+from app.restaurant.application.chat.service import ChatService
+from app.restaurant.application.ordering.services import CartService, OrderService
+from app.restaurant.application.rag.config import ConfigService
+from app.restaurant.application.rag.indexing import IndexingService
+from app.restaurant.application.rag.retrieval import RetrievalService
+from app.restaurant.domain.chat.entities import ChatSession
+from app.restaurant.domain.chat.repositories import ChatRepository
+from app.restaurant.domain.entities import Category, Dish, Restaurant
+from app.restaurant.domain.ordering.entities import Cart, Order
+from app.restaurant.domain.ordering.repositories import CartRepository, OrderRepository
+from app.restaurant.domain.rag.entities import (
     Chunk,
     ChunkDraft,
     IndexStatus,
@@ -35,7 +36,7 @@ from app.domain.rag.entities import (
     RagIndex,
     ScoredChunk,
 )
-from app.domain.rag.ports import (
+from app.restaurant.domain.rag.ports import (
     ConfigRepository,
     EmbeddingModel,
     IndexRepository,
@@ -43,11 +44,10 @@ from app.domain.rag.ports import (
     Reranker,
     VectorStore,
 )
-from app.domain.rag.value_objects import ChunkingStrategy, EmbeddingSpec
-from app.domain.restaurant.entities import Category, Dish, Restaurant
-from app.domain.restaurant.repositories import MenuRepository
-from app.infrastructure.rag.chunking.strategies import ChunkerFactory
-from app.infrastructure.seed.menu_data import CATEGORIES, build_menu
+from app.restaurant.domain.rag.value_objects import ChunkingStrategy, EmbeddingSpec
+from app.restaurant.domain.repositories import MenuRepository
+from app.restaurant.infrastructure.rag.chunking.strategies import ChunkerFactory
+from app.restaurant.infrastructure.seed.menu_data import CATEGORIES, build_menu
 
 DIM = 256
 _TOKEN = re.compile(r"[a-z0-9]+")
@@ -344,7 +344,7 @@ def world() -> World:
 @pytest.fixture
 async def active_world() -> World:
     """World with an entity+vector configuration built and live (rule parser, no LLM)."""
-    from app.domain.rag.value_objects import ChunkingConfig, RetrievalConfig
+    from app.restaurant.domain.rag.value_objects import ChunkingConfig, RetrievalConfig
 
     w = World()
     chunking = ChunkingConfig(strategy=ChunkingStrategy.ENTITY)

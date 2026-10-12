@@ -7,12 +7,12 @@ import asyncio
 import pytest
 from pydantic import BaseModel
 
-from app.domain.errors import ExternalServiceError, ValidationFailed
-from app.domain.rag.value_objects import ModelRef, ModelSelection
-from app.infrastructure.config import Settings
-from app.infrastructure.llm import catalog
-from app.infrastructure.llm.chat_models import LangChainLLM, build_langchain_chat_model
-from app.infrastructure.rag.embeddings import (
+from app.config import Settings
+from app.errors import ExternalServiceError, ValidationFailed
+from app.restaurant.domain.rag.value_objects import ModelRef, ModelSelection
+from app.restaurant.infrastructure.llm import catalog
+from app.restaurant.infrastructure.llm.chat_models import LangChainLLM, build_langchain_chat_model
+from app.restaurant.infrastructure.rag.embeddings import (
     LangChainEmbedder,
     NormalizedEmbeddings,
     build_langchain_embeddings,
@@ -101,7 +101,7 @@ def test_llm_select_switches_provider_and_model():
 
 
 def test_each_embedder_is_fixed_to_its_own_model_and_width():
-    from app.domain.rag.value_objects import EmbeddingSpec
+    from app.restaurant.domain.rag.value_objects import EmbeddingSpec
 
     spec = EmbeddingSpec(provider="cloudflare", model=BGE, dimensions=1024)
     e = LangChainEmbedder(cloudflare(), spec=spec)
@@ -131,8 +131,8 @@ def test_cloudflare_structured_output_parses_json_from_plain_text():
 
 
 # ---------------------------------------------------------------- free quota used up -> model is dimmed
-from app.domain.errors import LLMQuotaExceeded  # noqa: E402
-from app.infrastructure.llm.quota import QuotaTracker  # noqa: E402
+from app.errors import LLMQuotaExceeded  # noqa: E402
+from app.restaurant.infrastructure.llm.quota import QuotaTracker  # noqa: E402
 
 
 def test_quota_tracker_dims_a_model_for_the_cooldown_then_releases_it():
@@ -172,7 +172,7 @@ def test_embedding_quota_error_marks_the_model():
             raise RuntimeError("429 Too Many Requests: quota")
 
     q = QuotaTracker()
-    from app.domain.rag.value_objects import EmbeddingSpec
+    from app.restaurant.domain.rag.value_objects import EmbeddingSpec
 
     e = LangChainEmbedder(cloudflare(), quota=q, spec=EmbeddingSpec(provider="cloudflare", model=BGE, dimensions=1024))
     e._lc = Boom()

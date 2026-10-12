@@ -14,10 +14,10 @@ import asyncio
 import contextlib
 import logging
 
-from app.application.rag.jobs import run_index_build
-from app.container import Infra
-from app.infrastructure.config import get_settings
-from app.infrastructure.logging import configure_logging
+from app.config import get_settings
+from app.logging_config import configure_logging
+from app.restaurant.application.rag.jobs import run_index_build
+from app.restaurant.container import Infra
 
 log = logging.getLogger("worker")
 
