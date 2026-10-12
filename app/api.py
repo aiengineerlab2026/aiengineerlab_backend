@@ -28,7 +28,7 @@ APP_REGISTRY: list[AppInfo] = [
             "retrieval strategies, reranking, and RAG evaluation."
         ),
         tags=["LangChain", "RAG", "RAGAS"],
-        route="/apps/restaurant",
+        route="/restaurant",
         icon="utensils",
         status="active",
     )
