@@ -15,8 +15,14 @@ from app.restaurant.infrastructure.llm.quota import QuotaTracker, is_quota_error
 log = logging.getLogger(__name__)
 
 
-def build_langchain_chat_model(settings: Settings, model: str | None = None, provider: str | None = None) -> Any:
-    """Create the LangChain chat model for ``provider`` (default: the configured one; lazy provider imports)."""
+def build_langchain_chat_model(
+    settings: Settings, model: str | None = None, provider: str | None = None, max_tokens: int | None = None
+) -> Any:
+    """Create the LangChain chat model for ``provider`` (default: the configured one; lazy provider imports).
+
+    ``max_tokens`` raises the reply cap: some providers (Workers AI) default to a few hundred tokens, which cuts off the long
+    structured replies a RAGAS judge writes.
+    """
     name = model or settings.llm_model
     provider = provider or settings.llm_provider
     if provider == "cloudflare":
@@ -32,6 +38,7 @@ def build_langchain_chat_model(settings: Settings, model: str | None = None, pro
             temperature=settings.llm_temperature,
             timeout=settings.llm_timeout_seconds,
             max_retries=0,
+            max_completion_tokens=max_tokens,
         )
     if provider == "openai":
         from langchain_openai import ChatOpenAI
@@ -43,6 +50,7 @@ def build_langchain_chat_model(settings: Settings, model: str | None = None, pro
             temperature=settings.llm_temperature,
             timeout=settings.llm_timeout_seconds,
             max_retries=0,  # retries are handled by our own backoff policy
+            max_completion_tokens=max_tokens,
         )
     if provider == "google":
         from langchain_google_genai import ChatGoogleGenerativeAI
@@ -53,6 +61,7 @@ def build_langchain_chat_model(settings: Settings, model: str | None = None, pro
             temperature=settings.llm_temperature,
             timeout=settings.llm_timeout_seconds,
             max_retries=0,
+            max_output_tokens=max_tokens,
         )
     raise ServiceNotConfigured(f"Unsupported LLM provider '{provider}'.")
 

@@ -14,6 +14,9 @@ from app.api import api_router
 from app.config import get_settings
 from app.error_handlers import register_error_handlers
 from app.logging_config import configure_logging
+from app.myresume.application.evaluation import warm_up as warm_up_ranx
+from app.myresume.container import MyResumeInfra
+from app.myresume.infrastructure.bm25 import spacy_pipeline
 from app.restaurant.container import Infra
 from app.worker import JobWorker
 
@@ -36,6 +39,7 @@ async def lifespan(app: FastAPI):
     configure_logging(settings.log_level, json_logs=settings.app_env == "production")
     infra = Infra(settings)
     app.state.infra = infra
+    app.state.myresume = MyResumeInfra(settings, infra.quota)  # stateless lab: no database, shares the provider quota tracker
     worker = JobWorker(infra) if settings.run_worker else None
     try:
         async with infra.engine.connect() as conn:  # fail fast & loudly if the database is unreachable
@@ -58,6 +62,8 @@ async def lifespan(app: FastAPI):
     # Load the embedding model in the background so the first user query (and its measured latency)
     # doesn't pay the one-off model-load cost. Failures are non-fatal: it just loads lazily instead.
     warmup = asyncio.create_task(_warm_up(infra))
+    asyncio.get_running_loop().run_in_executor(None, spacy_pipeline)  # load spaCy's model before the first BM25 request
+    asyncio.get_running_loop().run_in_executor(None, warm_up_ranx)  # compile ranx before the first evaluation
     log.info("started", extra={"llm_configured": settings.llm_configured, "worker": bool(worker)})
     yield
     warmup.cancel()

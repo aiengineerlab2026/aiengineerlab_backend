@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.myresume import presentation as myresume
 from app.restaurant import presentation as restaurant
 
 
@@ -31,7 +32,19 @@ APP_REGISTRY: list[AppInfo] = [
         route="/restaurant",
         icon="utensils",
         status="active",
-    )
+    ),
+    AppInfo(
+        id="myresume",
+        name="My Resume",
+        description=(
+            "Match a resume to job postings and compare three retrieval methods side by side: BM25 keyword search, "
+            "vector similarity, and a hybrid of both fused with Reciprocal Rank Fusion."
+        ),
+        tags=["BM25", "Vector Search", "Hybrid RRF", "RAGAS"],
+        route="/myresume",
+        icon="file-user",
+        status="active",
+    ),
 ]
 
 
@@ -43,3 +56,4 @@ async def list_apps() -> list[AppInfo]:
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(apps_router)
 api_router.include_router(restaurant.router)
+api_router.include_router(myresume.router)

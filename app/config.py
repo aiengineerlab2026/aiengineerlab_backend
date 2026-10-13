@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     # otherwise clients can spoof the header and dodge the limit.
     trust_proxy_headers: bool = False
 
+    # --- My Resume lab ---------------------------------------------------------------------------
+    myresume_upload_rate_limit_max: int = 3  # resumes one client may upload in total (the lab is a demo); 0 disables
+    myresume_upload_rate_limit_window_seconds: int = 315_360_000
+    myresume_vector_rate_limit_max: int = 3  # vector searches (they call an embedding model) one client may run in total; 0 disables
+    myresume_vector_rate_limit_window_seconds: int = 315_360_000
+
     # --- background worker ---------------------------------------------------------------------
     # Score every real customer search question automatically (extra judge-LLM calls per question).
     live_evaluation_enabled: bool = True

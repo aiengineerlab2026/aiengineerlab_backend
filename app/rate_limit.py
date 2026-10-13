@@ -52,6 +52,13 @@ class SlidingWindowLimiter:
             reset = max(1, math.ceil(self.window - (now - q[0]))) if q else 0
         return Usage(self.max_events, used, max(0, self.max_events - used), reset)
 
+    def refund(self, key: str) -> None:
+        """Take back the most recent event of ``key`` (an action that was counted but never happened)."""
+        with self._lock:
+            q = self._events.get(key)
+            if q:
+                q.pop()
+
     def hit(self, key: str) -> LimitResult:
         """Record one event for ``key`` if the budget allows it. Rejected attempts are not counted."""
         if not self.enabled:
