@@ -42,7 +42,7 @@ APP_REGISTRY: list[AppInfo] = [
             "vector similarity, and a hybrid of both fused with Reciprocal Rank Fusion."
         ),
         tags=["BM25", "Vector Search", "Hybrid RRF", "Ranx"],
-        route="/myresume",
+        route="/test-resume-job-match",
         icon="file-user",
         status="active",
     ),
