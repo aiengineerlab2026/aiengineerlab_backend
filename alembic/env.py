@@ -9,6 +9,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
+from app.articles import models as article_models  # noqa: F401  (registers the articles tables)
 from app.config import get_settings
 from app.db import Base
 from app.restaurant.infrastructure import (

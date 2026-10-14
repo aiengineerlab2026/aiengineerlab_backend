@@ -15,12 +15,14 @@ from app.errors import (
     NotFoundError,
     RateLimited,
     ServiceNotConfigured,
+    Unauthorized,
     ValidationFailed,
 )
 
 log = logging.getLogger(__name__)
 
 _STATUS = {
+    Unauthorized: 401,
     NotFoundError: 404,
     ValidationFailed: 422,
     ConflictError: 409,

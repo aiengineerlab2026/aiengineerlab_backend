@@ -22,6 +22,12 @@ class ConflictError(DomainError):
     code = "conflict"
 
 
+class Unauthorized(DomainError):
+    """Missing, invalid or expired credentials."""
+
+    code = "unauthorized"
+
+
 class RateLimited(DomainError):
     """Too many requests from one client. ``details['retry_after_seconds']`` tells when to retry."""
 

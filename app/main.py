@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.api import api_router
+from app.articles.container import AdminInfra, sql_store_factory
 from app.config import get_settings
 from app.error_handlers import register_error_handlers
 from app.logging_config import configure_logging
@@ -40,6 +41,7 @@ async def lifespan(app: FastAPI):
     infra = Infra(settings)
     app.state.infra = infra
     app.state.myresume = MyResumeInfra(settings, infra.quota)  # stateless lab: no database, shares the provider quota tracker
+    app.state.admin = AdminInfra(settings, sql_store_factory(infra.session_factory))
     worker = JobWorker(infra) if settings.run_worker else None
     try:
         async with infra.engine.connect() as conn:  # fail fast & loudly if the database is unreachable

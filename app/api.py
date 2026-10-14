@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.articles import presentation as articles
 from app.myresume import presentation as myresume
 from app.restaurant import presentation as restaurant
 
@@ -57,3 +58,4 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(apps_router)
 api_router.include_router(restaurant.router)
 api_router.include_router(myresume.router)
+api_router.include_router(articles.router)

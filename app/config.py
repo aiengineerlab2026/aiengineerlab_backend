@@ -75,6 +75,17 @@ class Settings(BaseSettings):
     myresume_vector_rate_limit_max: int = 3  # vector searches (they call an embedding model) one client may run in total; 0 disables
     myresume_vector_rate_limit_window_seconds: int = 315_360_000
 
+    # --- admin (articles) ------------------------------------------------------------------------
+    # The login user. The password starts as ADMIN_DEFAULT_PASSWORD and is changed from the admin area, after which
+    # only its hash is stored in the database and this value is no longer used.
+    admin_username: str = "admin"
+    admin_default_password: str = "admin"
+    # Signs the login tokens. Empty = a random secret per process (everyone is logged out on restart).
+    admin_token_secret: str = ""
+    admin_token_ttl_seconds: int = 43_200  # 12 hours
+    admin_login_max_failures: int = 8  # wrong passwords one client IP may try within the window; 0 disables
+    admin_login_window_seconds: int = 900
+
     # --- background worker ---------------------------------------------------------------------
     # Score every real customer search question automatically (extra judge-LLM calls per question).
     live_evaluation_enabled: bool = True
