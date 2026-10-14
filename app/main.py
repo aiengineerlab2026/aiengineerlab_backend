@@ -13,6 +13,7 @@ from sqlalchemy import text
 from app.api import api_router
 from app.articles.container import AdminInfra, sql_store_factory
 from app.config import get_settings
+from app.db import warm_pool
 from app.error_handlers import register_error_handlers
 from app.logging_config import configure_logging
 from app.myresume.application.evaluation import warm_up as warm_up_ranx
@@ -44,8 +45,7 @@ async def lifespan(app: FastAPI):
     app.state.admin = AdminInfra(settings, sql_store_factory(infra.session_factory))
     worker = JobWorker(infra) if settings.run_worker else None
     try:
-        async with infra.engine.connect() as conn:  # fail fast & loudly if the database is unreachable
-            await conn.execute(text("SELECT 1"))
+        await warm_pool(infra.engine, settings.db_warm_connections)  # fail fast & loudly if the database is unreachable
     except Exception as exc:
         log.error("database connection failed: %s", exc)
         raise

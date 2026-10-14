@@ -154,8 +154,9 @@ def test_database_url_is_rewritten_for_asyncpg_and_password_is_decoded():
 
 
 def test_tls_is_on_for_remote_hosts_and_off_for_localhost():
-    assert Settings(database_url="postgresql://u:p@localhost:5433/d").connect_args == {}
-    assert Settings(database_url="postgresql://u:p@db.x.supabase.co:5432/d").connect_args == {"ssl": "require"}
+    timeout = Settings().db_connect_timeout_seconds  # every connection attempt is bounded
+    assert Settings(database_url="postgresql://u:p@localhost:5433/d").connect_args == {"timeout": timeout}
+    assert Settings(database_url="postgresql://u:p@db.x.supabase.co:5432/d").connect_args == {"timeout": timeout, "ssl": "require"}
     pooled = Settings(database_url="postgresql://u:p@pooler.supabase.com:6543/d").connect_args
     assert pooled["statement_cache_size"] == 0
 

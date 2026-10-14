@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     database_url: str = ""
     db_ssl: Literal["auto", "require", "disable"] = "auto"
     db_pool_size: int = 5
+    db_pool_recycle_seconds: int = 1800  # replace connections older than this, before the pooler / NAT silently drops them
+    db_pool_timeout_seconds: float = 30  # how long a request waits for a free pooled connection
+    db_connect_timeout_seconds: float = 15  # fail a connection attempt fast instead of hanging for asyncpg's 60 s default
+    db_warm_connections: int = 2  # connections opened (and tested) at startup, so the first requests find them ready
     db_echo: bool = False
 
     # --- LLM ---------------------------------------------------------------------------------
@@ -133,7 +137,7 @@ class Settings(BaseSettings):
     @property
     def connect_args(self) -> dict:
         url = self.sqlalchemy_url
-        args: dict = {}
+        args: dict = {"timeout": self.db_connect_timeout_seconds}
         host = url.host or ""
         is_local = host in ("localhost", "127.0.0.1", "::1", "postgres", "db")
         if self.db_ssl == "require" or (self.db_ssl == "auto" and not is_local):
