@@ -105,7 +105,7 @@ def test_sanitiser_strips_scripts_handlers_and_bad_links_but_keeps_formatting():
         '<a href="javascript:alert(1)">bad</a><a href="https://ok.dev">ok</a><img src=x onerror=alert(1)>'
     )
     out = clean_html(dirty)
-    assert "<script" not in out and "onclick" not in out and "javascript:" not in out and "<img" not in out
+    assert "<script" not in out and "onclick" not in out and "javascript:" not in out and "onerror" not in out
     assert "<strong>there</strong>" in out and 'href="https://ok.dev"' in out and "noopener" in out
 
 
@@ -200,3 +200,33 @@ def test_stored_content_is_sanitised_and_empty_articles_are_rejected(client):
     assert client.post("/api/v1/articles", json=evil, headers=h).json()["content"] == "<p>safe</p>"
     for body in ({"title": "  ", "content": "<p>x</p>"}, {"title": "x", "content": "<p> </p><br>"}):
         assert client.post("/api/v1/articles", json=body, headers=h).status_code == 422
+
+
+PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+
+
+def test_sanitiser_keeps_pasted_images_but_not_unsafe_sources():
+    assert f'src="{PIXEL}"' in clean_html(f'<p><img src="{PIXEL}" alt="x"></p>')
+    assert 'src="https://cdn.dev/a.png"' in clean_html('<img src="https://cdn.dev/a.png">')
+    for bad in (
+        '<img src="javascript:alert(1)">',
+        '<img src="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=">',
+        '<img src="data:text/html;base64,PHNjcmlwdD4=">',
+        '<img src="http://insecure.dev/a.png">',
+    ):
+        assert "src=" not in clean_html(bad), bad
+    assert "href=" not in clean_html(f'<a href="{PIXEL}">x</a>')  # data: is for pictures only, never for links
+    assert "onerror" not in clean_html(f'<img src="{PIXEL}" onerror="alert(1)">')
+
+
+def test_an_article_of_only_a_picture_is_accepted(client):
+    body = {"title": "Chart", "content": f'<img src="{PIXEL}">'}
+    r = client.post("/api/v1/articles", json=body, headers=auth(client))
+    assert r.status_code == 201 and PIXEL in r.json()["content"] and r.json()["excerpt"] == ""
+
+
+def test_resized_images_keep_numeric_sizes_only():
+    out = clean_html(f'<img src="{PIXEL}" width="240" height="135.5">')
+    assert 'width="240"' in out and 'height="135.5"' in out
+    bad = clean_html(f'<img src="{PIXEL}" width="100%" height="expression(alert(1))">')
+    assert "width=" not in bad and "height=" not in bad

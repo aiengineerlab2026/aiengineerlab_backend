@@ -84,7 +84,7 @@ def _full(a: Article) -> ArticleOut:
 
 def _checked(body: ArticleIn) -> tuple[str, str]:
     content = clean_html(body.content)
-    if not plain_text(content):
+    if not plain_text(content) and "<img" not in content:  # an article of only pictures is fine
         raise ValidationFailed("The article cannot be empty.")
     return body.title, content
 

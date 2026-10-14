@@ -28,7 +28,7 @@ class PasswordChangeIn(BaseModel):
 
 class ArticleIn(BaseModel):
     title: str = Field(max_length=200)
-    content: str = Field(max_length=200_000)  # HTML from the rich text editor
+    content: str = Field(max_length=20_000_000)  # HTML from the rich text editor; pasted images are inside it as data URIs
 
     @field_validator("title")
     @classmethod
