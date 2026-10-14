@@ -36,7 +36,7 @@ APP_REGISTRY: list[AppInfo] = [
     ),
     AppInfo(
         id="myresume",
-        name="My Resume",
+        name="Test Resume Job Matcher",
         description=(
             "Match a resume to job postings and compare three retrieval methods side by side: BM25 keyword search, "
             "vector similarity, and a hybrid of both fused with Reciprocal Rank Fusion."
