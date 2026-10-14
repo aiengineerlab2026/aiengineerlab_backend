@@ -13,6 +13,7 @@ import asyncio
 import os
 import re
 import tempfile
+import threading
 import warnings
 from collections.abc import Sequence
 
@@ -56,6 +57,13 @@ def _grade(coverage: float) -> int:
     return 3 if coverage >= STRONG_COVERAGE else 2 if coverage >= RELEVANT_COVERAGE else 0
 
 
+# ranx's metric kernels are numba ``parallel=True`` functions, and ranx forces numba's "workqueue" threading layer when it
+# is imported (overriding NUMBA_THREADING_LAYER). That layer aborts the whole process ("Concurrent access has been
+# detected", SIGABRT) when two threads launch a parallel kernel at once, which is what concurrent requests do through
+# ``asyncio.to_thread``. One evaluation is a few milliseconds, so they simply take turns.
+_RANX_LOCK = threading.Lock()
+
+
 def _ranx(qrels: dict[str, int], ranked: Sequence[str], k: int) -> dict[str, float]:
     # ranx compiles with numba, which caches next to the library or in the home directory: neither is writable everywhere
     os.environ.setdefault("NUMBA_CACHE_DIR", os.path.join(tempfile.gettempdir(), "numba-cache"))
@@ -64,7 +72,7 @@ def _ranx(qrels: dict[str, int], ranked: Sequence[str], k: int) -> dict[str, flo
     run = Run.from_dict({QUERY: {job_id: float(len(ranked) - i) for i, job_id in enumerate(ranked)}})
     binary = Qrels.from_dict({QUERY: {j: 1 for j in qrels}})
     graded = Qrels.from_dict({QUERY: qrels})
-    with warnings.catch_warnings():
+    with _RANX_LOCK, warnings.catch_warnings():
         warnings.simplefilter("ignore")
         flat = evaluate(binary, run, [f"precision@{k}", f"recall@{k}", f"mrr@{k}"])
         graded_scores = evaluate(graded, run, f"ndcg@{k}")

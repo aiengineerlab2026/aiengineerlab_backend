@@ -383,6 +383,16 @@ async def test_evaluation_without_a_relevant_job_says_metrics_are_undefined():
     assert None is res.precision is res.recall is res.ndcg is res.mrr
 
 
+async def test_concurrent_evaluations_do_not_crash_numba():
+    """ranx's numba kernels abort the whole process when two threads launch them at once; requests must take turns."""
+    import asyncio
+
+    svc = RankingEvaluationService(JOBS)
+    ids = [j.id for j in JOBS[:10]]
+    results = await asyncio.gather(*(svc.run(RESUME, ids) for _ in range(40)))
+    assert len({(r.precision, r.recall, r.ndcg, r.mrr) for r in results}) == 1
+
+
 def test_evaluation_endpoint_and_the_removed_endpoints(client):
     url = "/api/v1/myresume"
     top = client.post(f"{url}/match", json={"resume_text": RESUME, "config": {"method": "bm25", "top_k": 5}}).json()["results"]
