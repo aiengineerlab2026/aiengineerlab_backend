@@ -41,7 +41,7 @@ APP_REGISTRY: list[AppInfo] = [
             "Match a resume to job postings and compare three retrieval methods side by side: BM25 keyword search, "
             "vector similarity, and a hybrid of both fused with Reciprocal Rank Fusion."
         ),
-        tags=["BM25", "Vector Search", "Hybrid RRF", "RAGAS"],
+        tags=["BM25", "Vector Search", "Hybrid RRF", "Ranx"],
         route="/myresume",
         icon="file-user",
         status="active",
