@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     chat_rate_limit_window_seconds: int = 2_592_000  # 30 days: effectively a total cap per IP
     # Evaluations (the "Evaluate" button: judge LLM + LLM-based RAGAS metrics for every new question) one client may
     # run within the window. Chat keeps working once it is used up. 0 disables the limit.
-    eval_rate_limit_max: int = 2
+    eval_rate_limit_max: int = 3
     eval_rate_limit_window_seconds: int = 86400
     # Behind a reverse proxy, read the client IP from X-Forwarded-For. Only enable if you trust the proxy,
     # otherwise clients can spoof the header and dodge the limit.
