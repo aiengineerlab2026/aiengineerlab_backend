@@ -65,7 +65,10 @@ async def lifespan(app: FastAPI):
     # doesn't pay the one-off model-load cost. Failures are non-fatal: it just loads lazily instead.
     warmup = asyncio.create_task(_warm_up(infra))
     asyncio.get_running_loop().run_in_executor(None, spacy_pipeline)  # load spaCy's model before the first BM25 request
-    asyncio.get_running_loop().run_in_executor(None, warm_up_ranx)  # compile ranx before the first evaluation
+    try:  # compile ranx before the first evaluation, and wait for it: Cloud Run may throttle background work once it serves traffic
+        await asyncio.to_thread(warm_up_ranx)
+    except Exception as exc:  # noqa: BLE001 - non-fatal: the first evaluation compiles it instead
+        log.warning("ranx warm-up failed (will compile on first use): %s", exc)
     log.info("started", extra={"llm_configured": settings.llm_configured, "worker": bool(worker)})
     yield
     warmup.cancel()

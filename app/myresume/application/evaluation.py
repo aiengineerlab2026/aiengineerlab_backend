@@ -22,6 +22,15 @@ from pydantic import BaseModel
 from app.errors import ValidationFailed
 from app.myresume.domain.models import Job
 
+# Both must be set before ranx is imported. numba (behind ranx) caches compiled code next to the library or in the home
+# directory, and neither is writable everywhere (Cloud Run); matplotlib (which ranx imports) writes its font cache to
+# MPLCONFIGDIR and prefers a headless backend. Importing ranx here, at start-up, also builds that font cache and loads
+# scipy / pandas / numba once, instead of during the first evaluation request.
+os.environ.setdefault("NUMBA_CACHE_DIR", os.path.join(tempfile.gettempdir(), "numba-cache"))
+os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib"))
+os.environ.setdefault("MPLBACKEND", "Agg")
+from ranx import Qrels, Run, evaluate  # noqa: E402
+
 RELEVANT_COVERAGE = 0.3
 STRONG_COVERAGE = 0.5
 QUERY = "resume"
@@ -65,13 +74,13 @@ _RANX_LOCK = threading.Lock()
 
 
 def _ranx(qrels: dict[str, int], ranked: Sequence[str], k: int) -> dict[str, float]:
-    # ranx compiles with numba, which caches next to the library or in the home directory: neither is writable everywhere
-    os.environ.setdefault("NUMBA_CACHE_DIR", os.path.join(tempfile.gettempdir(), "numba-cache"))
-    from ranx import Qrels, Run, evaluate  # numba JIT: imported when first needed
-
-    run = Run.from_dict({QUERY: {job_id: float(len(ranked) - i) for i, job_id in enumerate(ranked)}})
-    binary = Qrels.from_dict({QUERY: {j: 1 for j in qrels}})
-    graded = Qrels.from_dict({QUERY: qrels})
+    # numba compiles its kernels once per document-id string *width* (numpy ``<U{n}`` arrays), about ten seconds each, so
+    # job ids of different lengths ("accountant", "backend-python") would each trigger a compilation inside a request.
+    # Fixed-width ids ("d0000") keep a single signature, the one ``warm_up`` already compiled.
+    ids = {job_id: f"d{n:04d}" for n, job_id in enumerate(dict.fromkeys([*ranked, *qrels]))}
+    run = Run.from_dict({QUERY: {ids[job_id]: float(len(ranked) - i) for i, job_id in enumerate(ranked)}})
+    binary = Qrels.from_dict({QUERY: {ids[j]: 1 for j in qrels}})
+    graded = Qrels.from_dict({QUERY: {ids[j]: grade for j, grade in qrels.items()}})
     with _RANX_LOCK, warnings.catch_warnings():
         warnings.simplefilter("ignore")
         flat = evaluate(binary, run, [f"precision@{k}", f"recall@{k}", f"mrr@{k}"])
@@ -83,7 +92,10 @@ def _ranx(qrels: dict[str, int], ranked: Sequence[str], k: int) -> dict[str, flo
 
 
 def warm_up() -> None:
-    """Compile ranx's numba kernels (about ten seconds, once per process) so the first evaluation a user asks for is quick."""
+    """Compile ranx's numba kernels (about ten seconds, once per process) with a dry run on mock data.
+
+    Start-up awaits it (see ``lifespan``): the first evaluation a user asks for then takes milliseconds.
+    """
     _ranx({"a": 2, "b": 3}, ["a", "c", "b"], 3)
 
 
