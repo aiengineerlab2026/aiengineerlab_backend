@@ -116,6 +116,20 @@ class TestAggregation:
 
 
 class TestImaging:
+    @pytest.mark.parametrize("fmt", ["JPEG", "PNG", "WEBP"])
+    def test_max_side_shrinks_big_uploads_while_decoding(self, fmt):
+        buf = io.BytesIO()
+        Image.new("RGB", (3000, 2000), (90, 120, 150)).save(buf, format=fmt)
+        small = decode_image(buf.getvalue(), max_side=1024)
+        assert max(small.size) <= 1024 and small.mode == "RGB" and abs(small.width / small.height - 1.5) < 0.02
+        assert decode_image(buf.getvalue()).size == (3000, 2000)  # unchanged without max_side
+
+    def test_max_side_still_judges_smallness_on_the_uploaded_size(self):
+        buf = io.BytesIO()
+        Image.new("RGB", (4000, 40), (1, 2, 3)).save(buf, format="PNG")
+        with pytest.raises(ValidationFailed, match="too small"):
+            decode_image(buf.getvalue(), max_side=1024)
+
     def test_decode_accepts_the_three_formats_and_rejects_everything_else(self):
         img = make_image((10, 20, 30), 1)
         for fmt in ("JPEG", "PNG", "WEBP"):
@@ -750,6 +764,27 @@ class TestApi:
         indexed = next(i for i in api.world.store.images.values() if i.split is Split.INDEX)
         r = api.client.post("/api/v1/country-matcher/predict", data={"example_id": str(indexed.id)})
         assert r.status_code == 404
+
+    def test_runtime_helpers(self):
+        from app.country_matcher.infrastructure import runtime
+
+        runtime.release_memory()  # a plain call must work on every platform
+        torch = pytest.importorskip("torch")
+        previous = torch.get_num_threads()
+        try:
+            runtime.configure_torch(1)
+            assert torch.get_num_threads() == 1
+        finally:
+            torch.set_num_threads(previous)
+
+    def test_memory_is_released_after_every_request_even_when_it_fails(self, api, monkeypatch):
+        calls = []
+        monkeypatch.setattr(presentation, "release_memory", lambda: calls.append(1))
+        url = "/api/v1/country-matcher"
+        bad = {"file": ("x.jpg", b"not an image", "image/jpeg")}
+        assert api.client.post(f"{url}/compare", files=bad).status_code == 422  # failure path
+        assert api.client.post(f"{url}/compare", files=upload()).status_code == 200
+        assert len(calls) == 2
 
     def test_compare_returns_both_models(self, api):
         r = api.client.post("/api/v1/country-matcher/compare", files=upload("CC"))

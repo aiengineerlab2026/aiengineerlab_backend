@@ -98,7 +98,8 @@ class Settings(BaseSettings):
     country_matcher_default_k: int = 5
     country_matcher_max_k: int = 20
     country_matcher_max_upload_mb: int = 8
-    country_matcher_max_concurrent_inference: int = 2  # requests allowed inside a model at once (CPU / memory bound)
+    country_matcher_max_concurrent_inference: int = 1  # requests allowed inside a model at once (CPU / memory bound)
+    country_matcher_torch_threads: int = 1  # PyTorch intra-op and inter-op threads: 1 keeps a 2 GB instance from thrashing
     country_matcher_warm_models: bool = False  # load both models at start-up (slower start, faster first request)
     # Predictions (each runs a neural network on the server) one client may make within the window; 0 disables.
     country_matcher_predict_rate_limit_max: int = 20

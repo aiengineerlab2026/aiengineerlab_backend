@@ -6,6 +6,7 @@ app.country_matcher.cli``) and are deliberately not reachable over HTTP.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 from itertools import zip_longest
@@ -19,6 +20,7 @@ from PIL import Image
 from app.country_matcher.container import CountryMatcherInfra
 from app.country_matcher.domain.models import Aggregation, ImageRecord, ModelName, Prediction, Split
 from app.country_matcher.infrastructure.imaging import decode_image
+from app.country_matcher.infrastructure.runtime import release_memory
 from app.country_matcher.infrastructure.storage import LocalImageStorage
 from app.country_matcher.presentation.schemas import (
     CompareResponse,
@@ -62,6 +64,14 @@ MODEL_CARDS = {
 
 def infra_of(request: Request) -> CountryMatcherInfra:
     return request.app.state.country_matcher
+
+
+QUERY_MAX_SIDE = 1024  # both encoders resize to ~224 px; nothing larger is ever needed
+
+
+async def _release() -> None:
+    """Free what the request left behind, off the event loop (a full collection can take tens of milliseconds)."""
+    await asyncio.to_thread(release_memory)
 
 
 def _absolute(request: Request, url: str) -> str:
@@ -112,7 +122,7 @@ async def _query_image(
     data = await file.read(limit + 1)  # never read more than the limit
     if len(data) > limit:
         raise ValidationFailed(f"The image is larger than {infra.settings.country_matcher_max_upload_mb} MB.")
-    return decode_image(data), QueryOut()
+    return decode_image(data, max_side=QUERY_MAX_SIDE), QueryOut()
 
 
 def _spend(request: Request, infra: CountryMatcherInfra, cost: int) -> int:
@@ -225,13 +235,17 @@ async def predict(
     infra = infra_of(request)
     k = _check_k(infra, k)
     spent = _spend(request, infra, 1)
+    image = prediction = None
     try:
         image, query = await _query_image(infra, file, example_id)
         prediction = await infra.predictor.predict(image, model, k=k, aggregation=aggregation)
+        return PredictResponse(query=query, prediction=_prediction_out(request, infra, prediction))
     except Exception:
         _refund(request, infra, spent)  # nothing was predicted: do not use up the visitor's budget
         raise
-    return PredictResponse(query=query, prediction=_prediction_out(request, infra, prediction))
+    finally:
+        image = prediction = None  # drop the decoded photo before collecting, or the collector cannot free it
+        await _release()
 
 
 @router.post("/compare", response_model=CompareResponse, summary="Estimate the country with CLIP and ResNet50 side by side")
@@ -245,13 +259,18 @@ async def compare(
     infra = infra_of(request)
     k = _check_k(infra, k)
     spent = _spend(request, infra, len(ModelName))  # two networks run: it costs two predictions
+    image = results = None
     try:
         image, query = await _query_image(infra, file, example_id)
         results = await infra.predictor.compare(image, k=k, aggregation=aggregation)
+        # The response holds only plain Python values (str, float, list): no tensors or arrays outlive the request.
+        return CompareResponse(query=query, predictions={m: _prediction_out(request, infra, p) for m, p in results.items()})
     except Exception:
         _refund(request, infra, spent)
         raise
-    return CompareResponse(query=query, predictions={m: _prediction_out(request, infra, p) for m, p in results.items()})
+    finally:
+        image = results = None  # drop the decoded photo and the neighbour records, then collect
+        await _release()
 
 
 @router.get("/evaluation", response_model=EvaluationResponse, summary="The stored evaluation results (never recomputed here)")

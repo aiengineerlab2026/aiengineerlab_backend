@@ -14,6 +14,7 @@ from app.api import api_router
 from app.articles.container import AdminInfra, sql_store_factory
 from app.config import get_settings
 from app.country_matcher.container import CountryMatcherInfra
+from app.country_matcher.infrastructure.runtime import configure_torch
 from app.db import warm_pool
 from app.error_handlers import register_error_handlers
 from app.logging_config import configure_logging
@@ -44,6 +45,7 @@ async def lifespan(app: FastAPI):
     app.state.infra = infra
     app.state.myresume = MyResumeInfra(settings, infra.quota)  # stateless lab: no database, shares the provider quota tracker
     app.state.admin = AdminInfra(settings, sql_store_factory(infra.session_factory))
+    configure_torch(settings.country_matcher_torch_threads)  # before any model runs
     country_matcher = CountryMatcherInfra(settings, infra.session_factory)  # models load lazily, once; images in object storage
     app.state.country_matcher = country_matcher
     worker = JobWorker(infra) if settings.run_worker else None

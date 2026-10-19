@@ -116,7 +116,9 @@ class ClipEmbedder(_LazyEmbedder):
         pixels = self._processor(images=list(images), return_tensors="pt")["pixel_values"].to(self.device)
         with self._torch.inference_mode():
             features = self._net(pixel_values=pixels).image_embeds  # the projected 512-d CLIP image embedding
-        return features.float().cpu().numpy()
+            out = features.float().cpu().numpy().copy()  # own the bytes: no tensor storage stays reachable from the result
+        del pixels, features
+        return out
 
 
 class ResNetEmbedder(_LazyEmbedder):
@@ -142,7 +144,9 @@ class ResNetEmbedder(_LazyEmbedder):
         batch = self._torch.stack([self._transform(im) for im in images]).to(self.device)
         with self._torch.inference_mode():
             features = self._net(batch)
-        return features.flatten(1).float().cpu().numpy()
+            out = features.flatten(1).float().cpu().numpy().copy()
+        del batch, features
+        return out
 
 
 def _hub_revision(repo_id: str) -> str:

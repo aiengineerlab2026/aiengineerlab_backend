@@ -16,8 +16,12 @@ STORED_MAX_SIDE = 1024  # stored copies are downscaled to this (enough for retri
 STORED_QUALITY = 88
 
 
-def decode_image(data: bytes, *, min_side: int = MIN_SIDE) -> Image.Image:
-    """Bytes -> RGB image, or ``ValidationFailed`` with a message safe to show the user."""
+def decode_image(data: bytes, *, min_side: int = MIN_SIDE, max_side: int | None = None) -> Image.Image:
+    """Bytes -> RGB image, or ``ValidationFailed`` with a message safe to show the user.
+
+    With ``max_side`` the image is shrunk while it is decoded (JPEG decodes straight to a reduced size) and then
+    fitted inside that square, so a 40-megapixel upload never exists as a full-size bitmap in memory.
+    """
     if not data:
         raise ValidationFailed("The file is empty.")
     try:
@@ -29,7 +33,11 @@ def decode_image(data: bytes, *, min_side: int = MIN_SIDE) -> Image.Image:
                 raise ValidationFailed("The image is too large to process. Please upload a smaller one.")
             probe.verify()  # structural check; the image must be reopened to be read afterwards
         image = Image.open(io.BytesIO(data))
+        if max_side:
+            image.draft("RGB", (max_side, max_side))  # JPEG only: decode at 1/2, 1/4 or 1/8 size; a no-op for other formats
         image.load()
+        if max_side:
+            image.thumbnail((max_side, max_side), Image.Resampling.BILINEAR)
     except ValidationFailed:
         raise
     except (UnidentifiedImageError, OSError, SyntaxError, ValueError, Image.DecompressionBombError) as exc:
@@ -42,7 +50,7 @@ def decode_image(data: bytes, *, min_side: int = MIN_SIDE) -> Image.Image:
         image = background
     else:
         image = image.convert("RGB")
-    if min(image.size) < min_side:
+    if min(size) < min_side:  # judged on the uploaded size, not the shrunken one
         raise ValidationFailed(f"The image is too small: both sides must be at least {min_side} pixels.")
     return image
 
