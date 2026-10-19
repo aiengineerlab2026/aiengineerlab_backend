@@ -79,6 +79,35 @@ class Settings(BaseSettings):
     myresume_vector_rate_limit_max: int = 3  # vector searches (they call an embedding model) one client may run in total; 0 disables
     myresume_vector_rate_limit_window_seconds: int = 315_360_000
 
+    # --- Country Matcher lab ---------------------------------------------------------------------
+    # Dataset images live in an S3-compatible bucket (Supabase Storage). Credentials are secrets: keep them only in the
+    # git-ignored backend/.env. They are used by the server and the admin scripts, never sent to the browser.
+    country_matcher_storage: Literal["s3", "local"] = "s3"  # "local" = a folder on disk, for development and tests
+    country_matcher_s3_endpoint: str = ""
+    country_matcher_s3_region: str = "eu-central-1"
+    country_matcher_s3_bucket: str = "country-matcher"
+    country_matcher_s3_access_key_id: str = ""
+    country_matcher_s3_secret_access_key: str = ""
+    # Public bucket? Set its public base URL (https://<ref>.supabase.co/storage/v1/object/public/<bucket>) and images are
+    # linked directly. Empty = private bucket: images are delivered through short-lived signed URLs.
+    country_matcher_public_base_url: str = ""
+    country_matcher_signed_url_ttl_seconds: int = 3600
+    country_matcher_local_dir: str = ".country-matcher-data"
+    country_matcher_clip_model: str = "openai/clip-vit-base-patch32"
+    country_matcher_device: str = "auto"  # auto | cpu | cuda | mps
+    country_matcher_default_k: int = 5
+    country_matcher_max_k: int = 20
+    country_matcher_max_upload_mb: int = 8
+    country_matcher_max_concurrent_inference: int = 2  # requests allowed inside a model at once (CPU / memory bound)
+    country_matcher_warm_models: bool = False  # load both models at start-up (slower start, faster first request)
+    # Predictions (each runs a neural network on the server) one client may make within the window; 0 disables.
+    country_matcher_predict_rate_limit_max: int = 20
+    country_matcher_predict_rate_limit_window_seconds: int = 3600
+    # Ingestion only (admin script): hosts images may be downloaded from, and the User-Agent sent to them. Wikimedia's
+    # policy asks for a descriptive agent with a way to contact you.
+    country_matcher_allowed_image_hosts: str = "upload.wikimedia.org,thumb.wikimedia.org"
+    country_matcher_user_agent: str = "AIEngineerLab-CountryMatcher/1.0 (https://github.com/aiengineerlab2026/aiengineerlab_backend; educational demo)"
+
     # --- admin (articles) ------------------------------------------------------------------------
     # The login user. The password starts as ADMIN_DEFAULT_PASSWORD and is changed from the admin area, after which
     # only its hash is stored in the database and this value is no longer used.
@@ -100,6 +129,10 @@ class Settings(BaseSettings):
     @classmethod
     def _strip(cls, v: str) -> str:
         return v.strip()
+
+    @property
+    def country_matcher_allowed_hosts(self) -> list[str]:
+        return [h.strip().lower() for h in self.country_matcher_allowed_image_hosts.split(",") if h.strip()]
 
     @property
     def cors_origin_list(self) -> list[str]:

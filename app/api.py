@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.articles import presentation as articles
+from app.country_matcher import presentation as country_matcher
 from app.myresume import presentation as myresume
 from app.restaurant import presentation as restaurant
 
@@ -46,6 +47,18 @@ APP_REGISTRY: list[AppInfo] = [
         icon="file-user",
         status="active",
     ),
+    AppInfo(
+        id="country-matcher",
+        name="Country Matcher",
+        description=(
+            "Can AI recognize a country from its streets? Upload a street photo and compare how CLIP and ResNet50 "
+            "image embeddings retrieve similar labeled photos and vote for a country."
+        ),
+        tags=["CLIP", "ResNet50", "pgvector", "Image Retrieval"],
+        route="/country-matcher",
+        icon="globe",
+        status="active",
+    ),
 ]
 
 
@@ -58,4 +71,5 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(apps_router)
 api_router.include_router(restaurant.router)
 api_router.include_router(myresume.router)
+api_router.include_router(country_matcher.router)
 api_router.include_router(articles.router)

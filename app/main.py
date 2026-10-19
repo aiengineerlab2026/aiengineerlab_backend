@@ -13,6 +13,7 @@ from sqlalchemy import text
 from app.api import api_router
 from app.articles.container import AdminInfra, sql_store_factory
 from app.config import get_settings
+from app.country_matcher.container import CountryMatcherInfra
 from app.db import warm_pool
 from app.error_handlers import register_error_handlers
 from app.logging_config import configure_logging
@@ -43,6 +44,8 @@ async def lifespan(app: FastAPI):
     app.state.infra = infra
     app.state.myresume = MyResumeInfra(settings, infra.quota)  # stateless lab: no database, shares the provider quota tracker
     app.state.admin = AdminInfra(settings, sql_store_factory(infra.session_factory))
+    country_matcher = CountryMatcherInfra(settings, infra.session_factory)  # models load lazily, once; images in object storage
+    app.state.country_matcher = country_matcher
     worker = JobWorker(infra) if settings.run_worker else None
     try:
         await warm_pool(infra.engine, settings.db_warm_connections)  # fail fast & loudly if the database is unreachable
@@ -64,6 +67,7 @@ async def lifespan(app: FastAPI):
     # Load the embedding model in the background so the first user query (and its measured latency)
     # doesn't pay the one-off model-load cost. Failures are non-fatal: it just loads lazily instead.
     warmup = asyncio.create_task(_warm_up(infra))
+    models_warmup = asyncio.create_task(country_matcher.warm_up()) if settings.country_matcher_warm_models else None
     asyncio.get_running_loop().run_in_executor(None, spacy_pipeline)  # load spaCy's model before the first BM25 request
     try:  # compile ranx before the first evaluation, and wait for it: Cloud Run may throttle background work once it serves traffic
         await asyncio.to_thread(warm_up_ranx)
@@ -72,6 +76,8 @@ async def lifespan(app: FastAPI):
     log.info("started", extra={"llm_configured": settings.llm_configured, "worker": bool(worker)})
     yield
     warmup.cancel()
+    if models_warmup:
+        models_warmup.cancel()
     if worker:
         await worker.stop()
     await infra.dispose()
